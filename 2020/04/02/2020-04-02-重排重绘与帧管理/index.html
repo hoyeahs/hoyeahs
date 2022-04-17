@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 6.1.0">
+
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css" integrity="sha256-DfWjNxDkM94fVBWx1H5BMMp0Zq7luBlV8QRcSES7s+0=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" integrity="sha256-Vzbj7sDDS/woiFS3uNKo8eIuni59rjyNGtXfstRzStA=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.11.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12},"copycode":false,"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="浏览器渲染网页的过程 首先渲染引擎将 HTML 解析成 DOM 树； 再将 CSS 代码解析成 CSSOM(CSS Object Model)； 结合 DOM 和 CSSOM 生成渲染树。通过 CSSOM 中的 class,id 等属性将对应的样式挂载到 DOM Tree 上。（即对每个节点描述视觉信息）； 根据渲染树生成页面布局。即将渲染树的视觉信息进行平面合成； - layout 将布局绘制到">
+<meta property="og:type" content="article">
+<meta property="og:title" content="重排重绘与帧优化管理">
+<meta property="og:url" content="http://example.com/2020/04/02/2020-04-02-%E9%87%8D%E6%8E%92%E9%87%8D%E7%BB%98%E4%B8%8E%E5%B8%A7%E7%AE%A1%E7%90%86/index.html">
+<meta property="og:site_name" content="郭靖大侠">
+<meta property="og:description" content="浏览器渲染网页的过程 首先渲染引擎将 HTML 解析成 DOM 树； 再将 CSS 代码解析成 CSSOM(CSS Object Model)； 结合 DOM 和 CSSOM 生成渲染树。通过 CSSOM 中的 class,id 等属性将对应的样式挂载到 DOM Tree 上。（即对每个节点描述视觉信息）； 根据渲染树生成页面布局。即将渲染树的视觉信息进行平面合成； - layout 将布局绘制到">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-04-02T07:02:09.000Z">
+<meta property="article:modified_time" content="2022-04-17T11:22:36.034Z">
+<meta property="article:author" content="GuoJing">
+<meta property="article:tag" content="前端">
+<meta property="article:tag" content="浏览器">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://example.com/2020/04/02/2020-04-02-%E9%87%8D%E6%8E%92%E9%87%8D%E7%BB%98%E4%B8%8E%E5%B8%A7%E7%AE%A1%E7%90%86/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://example.com/2020/04/02/2020-04-02-%E9%87%8D%E6%8E%92%E9%87%8D%E7%BB%98%E4%B8%8E%E5%B8%A7%E7%AE%A1%E7%90%86/","path":"2020/04/02/2020-04-02-重排重绘与帧管理/","title":"重排重绘与帧优化管理"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>重排重绘与帧优化管理 | 郭靖大侠</title>
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+      <img class="custom-logo-image" src="/images/apple-touch-icon-next.png" alt="郭靖大侠">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">郭靖大侠</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">站在巨人的肩膀上</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section">首页</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section">标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section">分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section">归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8F%E8%A7%88%E5%99%A8%E6%B8%B2%E6%9F%93%E7%BD%91%E9%A1%B5%E7%9A%84%E8%BF%87%E7%A8%8B"><span class="nav-number">1.</span> <span class="nav-text">浏览器渲染网页的过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E6%8E%92%E5%92%8C%E9%87%8D%E7%BB%98"><span class="nav-number">2.</span> <span class="nav-text">重排和重绘</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%87%8F%E5%B0%91%E9%87%8D%E6%8E%92%E5%92%8C%E9%87%8D%E7%BB%98%EF%BC%8C%E4%BC%98%E5%8C%96%E6%80%A7%E8%83%BD"><span class="nav-number">2.1.</span> <span class="nav-text">减少重排和重绘，优化性能</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B8%A7%E7%AE%A1%E7%90%86"><span class="nav-number">3.</span> <span class="nav-text">帧管理</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="GuoJing"
+      src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">GuoJing</p>
+  <div class="site-description" itemprop="description">Web前端、全栈开发工程师，整理日常工作中学习的知识。</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">6</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+        <div class="back-to-top animated" role="button" aria-label="返回顶部">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2020/04/02/2020-04-02-%E9%87%8D%E6%8E%92%E9%87%8D%E7%BB%98%E4%B8%8E%E5%B8%A7%E7%AE%A1%E7%90%86/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="GuoJing">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="郭靖大侠">
+      <meta itemprop="description" content="Web前端、全栈开发工程师，整理日常工作中学习的知识。">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="重排重绘与帧优化管理 | 郭靖大侠">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          重排重绘与帧优化管理
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2020-04-02 15:02:09" itemprop="dateCreated datePublished" datetime="2020-04-02T15:02:09+08:00">2020-04-02</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2022-04-17 19:22:36" itemprop="dateModified" datetime="2022-04-17T19:22:36+08:00">2022-04-17</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h3 id="浏览器渲染网页的过程"><a href="#浏览器渲染网页的过程" class="headerlink" title="浏览器渲染网页的过程"></a>浏览器渲染网页的过程</h3><ol>
+<li>首先渲染引擎将 HTML 解析成 DOM 树；</li>
+<li>再将 CSS 代码解析成 CSSOM(CSS Object Model)；</li>
+<li>结合 DOM 和 CSSOM 生成渲染树。通过 CSSOM 中的 class,id 等属性将对应的样式挂载到 DOM Tree 上。（即对每个节点描述视觉信息）；</li>
+<li>根据渲染树生成页面布局。即将渲染树的视觉信息进行平面合成； - layout</li>
+<li>将布局绘制到屏幕上。- paint</li>
+</ol>
+<h3 id="重排和重绘"><a href="#重排和重绘" class="headerlink" title="重排和重绘"></a>重排和重绘</h3><p>网页生成，至少需要渲染一次。用户访问的过程中，还会不断的重新渲染。<br>由于浏览器采用流式布局模型（Flow Based Layout），对渲染树布局计算通常只需要遍历一次就能完成。但对于 table 及其内部的子元素，可能需要多次计算，这是为什么要避免使用 table 布局的主要原因。</p>
+<p><strong>重新渲染就是重新生成布局和重新绘制</strong></p>
+<span id="more"></span>
+
+<p><strong>以下行为都会导致重新渲染</strong></p>
+<blockquote>
+<ul>
+<li>修改 dom（增、删、改 dom 节点）</li>
+<li>修改样式表</li>
+<li>用户事件（比如鼠标悬停、页面滚动、输入框键入文字、改变窗口大小等）</li>
+</ul>
+</blockquote>
+<ul>
+<li><strong>重排</strong> 当节点的几何尺寸发生变化，布局需要重新计算时，也就触发了重排。</li>
+<li><strong>重绘</strong> 相反，如果节点只是样式发生改变，则触发重绘</li>
+</ul>
+<blockquote>
+<p>重绘不一定会触发重排，重排必然会导致重绘。</p>
+</blockquote>
+<h4 id="减少重排和重绘，优化性能"><a href="#减少重排和重绘，优化性能" class="headerlink" title="减少重排和重绘，优化性能"></a>减少重排和重绘，优化性能</h4><p>频繁的重排和重绘，以及部分的重排是导致页面性能低下的主要原因。那么减少重排、重绘及合理的重排至关重要。<br>如果修改某个深层的节点，它并不会对其他节点造成影响。但修改一个页面顶级或嵌套多层节点的节点时，会影响整个页面的改变，付出的性能代价也是巨大的。</p>
+<p>浏览器有一个比较只能的策略，基于你的脚本会创建一个变化队列，浏览器不断向队列添加变更的节点状态，然后一次执行，尽量减少重新渲染。</p>
+<p>但是你的脚本也会让浏览器立即执行重新渲染，一般来说样式的写操作之后，如果有下面的这些读操作，会立即引起浏览器的重新渲染：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">offsetTop/offsetLeft/offsetWidth/offsetHeight</span><br><span class="line">scrollTop/scrollLeft/scrollWidth/scrollHeight</span><br><span class="line">clientTop/clientLeft/clientWidth/clientHeight</span><br><span class="line">getComputedStyle()</span><br></pre></td></tr></table></figure>
+
+<p>所以从性能角度考虑，尽量不要吧读操作和写操作放在一个语句里</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">// bad</span><br><span class="line">div.style.left = div.offsetLeft + 10 + &quot;px&quot;;</span><br><span class="line">div.style.top = div.offsetTop + 10 + &quot;px&quot;;</span><br><span class="line"></span><br><span class="line">// good</span><br><span class="line">var left = div.offsetLeft;</span><br><span class="line">var top  = div.offsetTop;</span><br><span class="line">div.style.left = left + 10 + &quot;px&quot;;</span><br><span class="line">div.style.top = top + 10 + &quot;px&quot;;</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="帧管理"><a href="#帧管理" class="headerlink" title="帧管理"></a>帧管理</h3><p>网页动画的每一帧都是一次重新渲染，一般网页动画，需要达到每秒30-60帧才能比较顺畅。如果要达到动画最佳的流畅状态，每次重新渲染的时间不能超过16.66ms。</p>
+
+    </div>
+
+    
+    
+    
+      
+
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%89%8D%E7%AB%AF/" rel="tag"># 前端</a>
+              <a href="/tags/%E6%B5%8F%E8%A7%88%E5%99%A8/" rel="tag"># 浏览器</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2020/02/18/2020-04-03-Js%E4%B8%AD%E9%98%B2%E6%8A%96-%E8%8A%82%E6%B5%81%E7%9A%84%E7%90%86%E8%A7%A3/" rel="prev" title="Js中防抖,节流的理解">
+                  <i class="fa fa-chevron-left"></i> Js中防抖,节流的理解
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/04/17/%E6%88%90%E9%95%BF%E5%9C%B0%E5%9B%BE/" rel="next" title="成长地图">
+                  成长地图 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">GuoJing</span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js" integrity="sha256-yt2kYMy0w8AbtF89WXb2P1rfjcP/HTHLT7097U8Y5b8=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lozad@1.16.0/dist/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  
+
+
+
+  <script src="/js/third-party/fancybox.js"></script>
+
+
+  
+
+
+
+
+
+</body>
+</html>
